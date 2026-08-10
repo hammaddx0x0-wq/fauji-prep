@@ -1364,13 +1364,23 @@ function wireViewEvents(){
     });
     const aiGenBtn=document.getElementById('aiGenerateBtn');
     if(aiGenBtn) aiGenBtn.addEventListener('click', async ()=>{
-      const notes=document.getElementById('aiNotesText').value.trim();
+      const notesRaw=document.getElementById('aiNotesText').value.trim();
       const count=parseInt(document.getElementById('aiMcqCount').value,10);
-      if(!notes || notes.length<20){ STATE.aiGenError='Please paste some notes first (at least a few sentences).'; render(); return; }
+      if(!notesRaw || notesRaw.length<20){ STATE.aiGenError='Please paste some notes first (at least a few sentences).'; render(); return; }
+      const MAX_NOTES_CHARS = 9000; // keeps each request comfortably under the free-tier token limit
+      let notes = notesRaw;
+      let wasTrimmed = false;
+      if(notes.length > MAX_NOTES_CHARS){
+        notes = notes.slice(0, MAX_NOTES_CHARS);
+        wasTrimmed = true;
+      }
       STATE.aiGenLoading=true; STATE.aiGenError=null; STATE.aiGenerated=[]; render();
       try{
         const qs = await generateMcqsFromNotes(notes,count);
         STATE.aiGenerated = qs.map(q=>({...q, selected:true}));
+        if(wasTrimmed){
+          STATE.aiGenError = `Note: your notes were long, so only the first ~${MAX_NOTES_CHARS} characters were used this time. Paste the remaining part and generate again for more MCQs.`;
+        }
       }catch(err){
         STATE.aiGenError = err.message || 'Something went wrong. Please try again.';
       }
