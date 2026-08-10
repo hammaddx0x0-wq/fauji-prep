@@ -1297,13 +1297,14 @@ async function generateMcqsFromNotes(notesText,count){
     const msg = typeof data.error === 'string' ? data.error : (data.error.message || JSON.stringify(data.error));
     throw new Error('Generator error: '+msg);
   }
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  const text = data?.choices?.[0]?.message?.content;
   if(!text) throw new Error('No response text came back — try again.');
   let parsed;
   try{ parsed = JSON.parse(text); }
   catch(e){ throw new Error('Could not parse the AI response as JSON — try again.'); }
-  if(!Array.isArray(parsed) || parsed.length===0) throw new Error('AI did not return any questions — try shorter/clearer notes.');
-  const clean = parsed.filter(q=>q && typeof q.q==='string' && Array.isArray(q.opts) && q.opts.length===4 && Number.isInteger(q.ans) && q.ans>=0 && q.ans<=3);
+  const arr = Array.isArray(parsed) ? parsed : parsed.questions;
+  if(!Array.isArray(arr) || arr.length===0) throw new Error('AI did not return any questions — try shorter/clearer notes.');
+  const clean = arr.filter(q=>q && typeof q.q==='string' && Array.isArray(q.opts) && q.opts.length===4 && Number.isInteger(q.ans) && q.ans>=0 && q.ans<=3);
   if(clean.length===0) throw new Error('AI response was malformed — try again.');
   return clean;
 }
