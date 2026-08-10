@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fauji Prep — PMA &amp; ISSB Test Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #171d12;
+    --bg-panel: #212a18;
+    --bg-panel-2: #262f1c;
+    --line: #3a4429;
+    --khaki: #c7b483;
+    --khaki-dim: #8d8460;
+    --olive: #5c6b3f;
+    --olive-bright: #7c9153;
+    --rust: #a8482f;
+    --rust-bright: #c65a3c;
+    --text: #eee7d3;
+    --text-dim: #a9a58c;
+    --ok: #6f8f4e;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 10% 0%, rgba(124,145,83,0.08), transparent 40%),
+      repeating-linear-gradient(135deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 2px, transparent 2px, transparent 14px);
+    color: var(--text);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+  }
+  h1,h2,h3,.display{
+    font-family:'Oswald', sans-serif;
+    letter-spacing:0.03em;
+    text-transform:uppercase;
+    color: var(--khaki);
+    margin:0;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  .app{max-width:1000px;margin:0 auto;padding:18px 16px 60px;}
+
+  /* ---------- Top bar / rank ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    border-bottom:2px solid var(--olive);
+    padding-bottom:14px;margin-bottom:20px;flex-wrap:wrap;gap:12px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand .badge{
+    width:42px;height:42px;border:2px solid var(--khaki);
+    display:flex;align-items:center;justify-content:center;
+    transform:rotate(45deg);flex-shrink:0;
+  }
+  .brand .badge span{transform:rotate(-45deg);font-family:'Oswald';font-weight:700;color:var(--khaki);font-size:15px;}
+  .brand h1{font-size:22px;line-height:1;}
+  .brand small{display:block;color:var(--text-dim);text-transform:none;letter-spacing:normal;font-family:'IBM Plex Sans';font-size:12px;}
+
+  .rank-box{
+    display:flex;align-items:center;gap:10px;
+    border:1px solid var(--line);background:var(--bg-panel);
+    padding:8px 14px;
+  }
+  .rank-stars{display:flex;gap:3px;}
+  .star{width:10px;height:10px;background:var(--khaki-dim);clip-path:polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);}
+  .star.filled{background:var(--khaki);}
+  .rank-label{font-family:'Oswald';font-size:13px;letter-spacing:0.05em;text-transform:uppercase;color:var(--khaki);}
+  .rank-sub{font-size:11px;color:var(--text-dim);}
+
+  /* ---------- Nav ---------- */
+  .nav{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;}
+  .nav button{
+    background:var(--bg-panel);color:var(--text);border:1px solid var(--line);
+    font-family:'Oswald';letter-spacing:0.04em;text-transform:uppercase;font-size:13px;
+    padding:10px 16px;cursor:pointer;transition:.15s;
+  }
+  .nav button:hover{border-color:var(--olive-bright);}
+  .nav button.active{background:var(--olive);border-color:var(--olive-bright);color:#fff;}
+
+  .panel{background:var(--bg-panel);border:1px solid var(--line);padding:20px;margin-bottom:16px;}
+  .panel + .panel{margin-top:16px;}
+
+  /* home cards */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}
+  .card{
+    background:var(--bg-panel);border:1px solid var(--line);padding:18px;
+    cursor:pointer;transition:.15s;position:relative;overflow:hidden;
+  }
+  .card:hover{border-color:var(--rust-bright);transform:translateY(-2px);}
+  .card .tag{font-family:'IBM Plex Mono';font-size:11px;color:var(--rust-bright);letter-spacing:.08em;}
+  .card h3{font-size:19px;margin:6px 0 8px;}
+  .card p{color:var(--text-dim);font-size:13px;line-height:1.5;margin:0;}
+
+  /* buttons */
+  .btn{
+    font-family:'Oswald';letter-spacing:0.04em;text-transform:uppercase;font-size:13px;
+    background:var(--olive);color:#fff;border:1px solid var(--olive-bright);
+    padding:10px 18px;cursor:pointer;transition:.15s;
+  }
+  .btn:hover{background:var(--olive-bright);}
+  .btn.rust{background:var(--rust);border-color:var(--rust-bright);}
+  .btn.rust:hover{background:var(--rust-bright);}
+  .btn.ghost{background:transparent;color:var(--khaki);border:1px solid var(--khaki-dim);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  select,input[type=number],input[type=text],textarea{
+    background:var(--bg);color:var(--text);border:1px solid var(--line);
+    font-family:'IBM Plex Sans';padding:8px 10px;font-size:14px;
+  }
+  textarea{width:100%;min-height:110px;resize:vertical;font-family:'IBM Plex Sans';}
+  label{font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;}
+
+  /* quiz */
+  .qhead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+  .timer{font-family:'IBM Plex Mono';font-size:22px;color:var(--rust-bright);border:1px solid var(--rust);padding:4px 12px;}
+  .timer.low{animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .progress-bar{height:5px;background:var(--line);margin-bottom:18px;position:relative;}
+  .progress-bar > div{height:100%;background:var(--olive-bright);transition:width .2s;}
+  .qcount{font-family:'IBM Plex Mono';color:var(--text-dim);font-size:12px;}
+  .qsection-tag{display:inline-block;font-family:'IBM Plex Mono';font-size:10px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--bg);background:var(--khaki);padding:2px 8px;margin-bottom:10px;}
+  .qtext{font-size:18px;line-height:1.5;margin-bottom:16px;color:var(--text);}
+  .opt{
+    display:block;width:100%;text-align:left;background:var(--bg);border:1px solid var(--line);
+    color:var(--text);padding:11px 14px;margin-bottom:9px;cursor:pointer;font-size:14px;transition:.12s;
+  }
+  .opt:hover{border-color:var(--olive-bright);}
+  .opt.selected{border-color:var(--khaki);background:#2b3520;}
+  .opt.correct{border-color:var(--ok);background:#26361f;}
+  .opt.wrong{border-color:var(--rust);background:#382019;}
+  .navrow{display:flex;justify-content:space-between;margin-top:16px;}
+  .navgrid{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;}
+  .navgrid span{
+    width:26px;height:26px;display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono';font-size:11px;border:1px solid var(--line);cursor:pointer;color:var(--text-dim);
+  }
+  .navgrid span.answered{border-color:var(--olive-bright);color:var(--khaki);}
+  .navgrid span.current{border-color:var(--rust-bright);color:var(--rust-bright);}
+
+  /* results */
+  .score-big{font-family:'Oswald';font-size:56px;color:var(--khaki);line-height:1;}
+  .breakdown{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:16px 0;}
+  .breakdown div{background:var(--bg);border:1px solid var(--line);padding:10px 12px;}
+  .breakdown div b{display:block;font-family:'Oswald';font-size:20px;color:var(--khaki);}
+  .review-item{border-left:3px solid var(--line);padding:10px 14px;margin-bottom:10px;background:var(--bg);}
+  .review-item.wrong{border-left-color:var(--rust);}
+  .review-item.right{border-left-color:var(--ok);}
+
+  /* study notes */
+  .filterbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .filterbar button{
+    font-family:'IBM Plex Mono';font-size:12px;background:var(--bg);border:1px solid var(--line);
+    color:var(--text-dim);padding:6px 12px;cursor:pointer;
+  }
+  .filterbar button.active{border-color:var(--khaki);color:var(--khaki);}
+  .note-item{border:1px solid var(--line);padding:12px 14px;margin-bottom:8px;background:var(--bg);}
+  .note-item .q{color:var(--text);margin-bottom:6px;}
+  .note-item .a{color:var(--ok);font-size:13px;}
+  .searchbox{width:100%;margin-bottom:14px;}
+
+  /* ISSB sub-nav */
+  .subnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .subnav button{
+    background:var(--bg-panel-2);border:1px solid var(--line);color:var(--text-dim);
+    font-family:'Oswald';text-transform:uppercase;font-size:12px;letter-spacing:.04em;padding:7px 13px;cursor:pointer;
+  }
+  .subnav button.active{border-color:var(--rust-bright);color:var(--rust-bright);}
+
+  .srt-box{font-size:19px;line-height:1.55;margin-bottom:16px;border-left:3px solid var(--khaki);padding-left:16px;}
+  .wat-word{
+    font-family:'Oswald';font-size:52px;color:var(--khaki);text-align:center;
+    padding:30px 0;border:1px dashed var(--olive);margin-bottom:16px;
+  }
+  .qa-block{border:1px solid var(--line);padding:12px 14px;margin-bottom:10px;background:var(--bg);}
+  .qa-block .who{font-family:'IBM Plex Mono';font-size:11px;color:var(--rust-bright);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+  .qa-block .q{color:var(--text);}
+  .info-card{border:1px solid var(--line);background:var(--bg);padding:14px 16px;margin-bottom:10px;}
+  .info-card h4{font-family:'Oswald';color:var(--khaki);font-size:15px;text-transform:uppercase;margin:0 0 6px;letter-spacing:.03em;}
+  .info-card p{margin:0;color:var(--text-dim);font-size:13.5px;line-height:1.6;}
+  .footer-note{color:var(--text-dim);font-size:12px;text-align:center;margin-top:30px;line-height:1.6;}
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--olive);}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.269/build/pdf.min.js"></script>
+<script>if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.269/build/pdf.worker.min.js'; }</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.11.0/mammoth.browser.min.js"></script>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+/* =========================================================================
+   QUESTION BANK
+   ========================================================================= */
+const VERBAL = [
+["Analogy: Doctor is to Hospital as Teacher is to ____.",["Office","School","Court","Clinic"],1],
+["Analogy: Bird is to Nest as Bee is to ____.",["Hive","Web","Burrow","Nest"],0],
+["Analogy: Pen is to Write as Knife is to ____.",["Cut","Sharp","Kitchen","Blade"],0],
+["Analogy: Fish is to Water as Bird is to ____.",["Nest","Air","Tree","Cage"],1],
+["Analogy: Author is to Book as Sculptor is to ____.",["Chisel","Statue","Stone","Museum"],1],
+["Synonym of 'Benevolent' is:",["Cruel","Kind","Greedy","Timid"],1],
+["Synonym of 'Candid' is:",["Frank","Shy","Rude","Vague"],0],
+["Synonym of 'Diligent' is:",["Lazy","Hardworking","Careless","Slow"],1],
+["Synonym of 'Adamant' is:",["Flexible","Stubborn","Kind","Weak"],1],
+["Synonym of 'Vigilant' is:",["Careless","Alert","Sleepy","Bold"],1],
+["Antonym of 'Meticulous' is:",["Careful","Careless","Neat","Precise"],1],
+["Antonym of 'Optimistic' is:",["Hopeful","Pessimistic","Cheerful","Brave"],1],
+["Antonym of 'Generous' is:",["Kind","Stingy","Rich","Poor"],1],
+["Antonym of 'Courageous' is:",["Brave","Bold","Cowardly","Strong"],2],
+["Antonym of 'Ancient' is:",["Old","Modern","Historic","Aged"],1],
+["Odd one out:",["Apple","Banana","Carrot","Mango"],2],
+["Odd one out:",["Circle","Square","Triangle","Sphere"],3],
+["Odd one out:",["Hockey","Football","Cricket","Piano"],3],
+["Odd one out:",["Rifle","Pistol","Sword","Compass"],3],
+["Odd one out:",["Doctor","Engineer","Teacher","Hospital"],3],
+["Number series: 2, 4, 8, 16, ?",["24","30","32","36"],2],
+["Number series: 3, 6, 9, 12, ?",["14","15","16","18"],1],
+["Number series: 1, 1, 2, 3, 5, 8, ?",["11","12","13","14"],2],
+["Number series: 5, 10, 20, 40, ?",["60","70","80","90"],2],
+["Number series: 1, 4, 9, 16, 25, ?",["30","36","32","28"],1],
+["Letter series: A, C, E, G, ?",["H","I","J","K"],1],
+["Letter series: B, D, F, H, ?",["I","J","K","L"],1],
+["Letter series: Z, X, V, T, ?",["S","R","Q","P"],1],
+["Coding: If CAT is coded as DBU, then DOG is coded as:",["EPH","EPI","FPH","EOH"],0],
+["Coding: If in a code, PEN is written as OFM, then BOOK is written as:",["ANPJ","APNL","ANPL","CNPJ"],2],
+["Blood relation: A is B's father. B is C's sister. C is A's:",["Son","Daughter","Child","Nephew"],2],
+["Blood relation: Pointing to a photograph, Ali said, 'She is the daughter of my grandfather's only son.' How is the girl related to Ali?",["Sister","Cousin","Niece","Daughter"],0],
+["Direction sense: Facing north, you turn 90° clockwise, then 180°. You now face:",["North","South","East","West"],3],
+["A train travels 60 km in 45 minutes. Its speed in km/h is approximately:",["70","75","80","85"],2],
+["If 5 workers build a wall in 12 days, how many days will 10 workers take (same rate)?",["4","5","6","8"],2],
+["Insert the missing number: 7, 14, 21, 28, ?",["30","32","35","36"],2],
+["Analogy: Soldier is to Army as Sailor is to ____.",["Navy","Ship","Ocean","Air Force"],0],
+["Analogy: Key is to Lock as Password is to ____.",["Computer","Account","Security","Login"],1],
+["Odd one out:",["Kohat","Malir","Gujranwala","Lahore"],3],
+["Series completion: 2, 6, 12, 20, 30, ?",["36","40","42","44"],2],
+["If today is Monday, what day will it be after 65 days?",["Monday","Tuesday","Wednesday","Thursday"],1]
+];
+
+const NONVERBAL = [
+["Number series (matrix logic): Row reads 4, 9, 16 (squares of 2,3,4). What is the next number?",["20","25","23","28"],1],
+["Pattern: 1 triangle needs 3 matchsticks, 2 joined triangles need 5, 3 joined triangles need 7. How many for 5 joined triangles?",["9","10","11","12"],1],
+["Classification: Which does not belong with the others (shape family)?",["Cube","Cylinder","Sphere","Rectangle"],3],
+["Mirror-image logic: The mirror image of the digit '2' viewed in a vertical mirror looks:",["Same as 2","Like 5","Reversed left-right","Like 7"],2],
+["Water-image logic: The water (upside-down) reflection of the letter 'W' resembles:",["M","E","V","W"],0],
+["Direction/Compass: Starting at point A, walk 5 km North, then 5 km East, then 5 km South. You are now:",["5 km East of A","5 km West of A","Back at A","5 km North of A"],0],
+["Cube folding logic: A cube has faces numbered 1 to 6, opposite faces sum to 7. If 3 is on top, what is on the bottom?",["2","3","4","5"],2],
+["Series of figures: A square rotates 90° clockwise each step. After 3 steps (270° total), how has it visually changed from the original?",["Looks identical (square symmetry)","Looks upside down only","Looks like a triangle","Cannot be determined"],0],
+["Odd figure out (described): Three figures have 3 sides, one figure has 4 sides. Which is the odd one?",["The 4-sided figure","Any of the 3-sided figures","None, all are same","Cannot say"],0],
+["Analogy of figures: A small circle inside a big circle is to 'nested' as two separate circles side by side is to:",["Overlapping","Nested","Disjoint / separate","Intersecting"],2],
+["Coding-decoding (symbol logic): If ★ = 1, ▲ = 2, ● = 3, then ★▲● represents the number:",["123","321","132","213"],0],
+["Series: Square, Pentagon, Hexagon, Heptagon, ? (by number of sides increasing by 1)",["Octagon","Nonagon","Circle","Triangle"],0],
+["Pattern completion: 2 dots, 4 dots, 6 dots, 8 dots, next term has how many dots?",["9","10","12","14"],1],
+["Non-verbal classification: Which set is odd? Set A: Square inside circle. Set B: Triangle inside circle. Set C: Star inside circle. Set D: Circle inside square.",["Set A","Set B","Set C","Set D"],3],
+["Rotation logic: A clock's hour hand moves 30° every hour. After 4 hours, it has moved:",["90°","120°","150°","180°"],1],
+["Series: 1, 4, 9, 16, ? (visual dot-square pattern)",["20","24","25","30"],2],
+["Direction sense: If South-East becomes your new North after rotating the map 135° anticlockwise, where was true North originally relative to you?",["Directly ahead","To your left","To your right","Behind you"],2],
+["Pattern: A figure has 1 line of symmetry (isosceles triangle). Which shape below normally has 4 lines of symmetry?",["Square","Rectangle","Parallelogram","Trapezium"],0],
+["Sequence of shading: A hexagon is shaded in alternate triangles (3 of 6). What fraction is shaded?",["1/6","1/3","1/2","2/3"],2],
+["Embedded figure logic: A star is hidden inside a busy pattern of overlapping triangles. Spotting it tests:",["Memory","Visual discrimination","Vocabulary","Arithmetic"],1],
+["Series: 3, 9, 27, 81, ?",["162","243","216","324"],1],
+["Odd one out (grouping by number of sides): Triangle, Square, Pentagon, Circle",["Triangle","Square","Pentagon","Circle"],3],
+["Cube net logic: How many faces does a standard cube net have when unfolded flat?",["4","5","6","8"],2],
+["Pattern: A dice shows 1 opposite 6, 2 opposite 5, 3 opposite 4. If 1 is facing up and 2 is facing you, which number faces left (standard die)?",["3","4","5","6"],0],
+["Series of figures increasing sides by one each time starting from a line (2 sides conceptually) — which comes 4th: Line, Triangle, Square, ?",["Pentagon","Hexagon","Circle","Rectangle"],0]
+];
+
+const ENGLISH = [
+["Choose the correct sentence:",["He don't know the answer.","He doesn't know the answer.","He not know the answer.","He no knows the answer."],1],
+["I did not ___ you yesterday at the party.",["seeing","saw","see","to see"],2],
+["Fill in the blank: She has been working here ___ 2019.",["for","since","from","at"],1],
+["Choose the correctly spelled word:",["Recieve","Receive","Receeve","Receve"],1],
+["Synonym of 'Abundant':",["Scarce","Plentiful","Rare","Limited"],1],
+["Antonym of 'Ancient':",["Old","Modern","Historic","Antique"],1],
+["Identify the part of speech of the underlined word: 'She runs QUICKLY.'",["Noun","Verb","Adverb","Adjective"],2],
+["Choose the correct passive voice of: 'They built the bridge.'",["The bridge is built by them.","The bridge was built by them.","The bridge builds by them.","The bridge has build by them."],1],
+["Fill in the blank: Neither the teacher nor the students ___ ready.",["is","are","was","be"],1],
+["Choose the correct preposition: He is good ___ mathematics.",["in","at","on","with"],1],
+["Idiom meaning: 'To burn the midnight oil' means:",["To waste time","To work/study late into the night","To start a fire","To relax"],1],
+["Choose the correct plural of 'Analysis':",["Analysises","Analyses","Analysis's","Analysi"],1],
+["Which word is a conjunction?",["Quickly","And","Beautiful","Run"],1],
+["Choose the correct sentence:",["Each of the boys have a pen.","Each of the boys has a pen.","Each of the boys having a pen.","Each of the boy has a pen."],1],
+["The opposite of 'Optimistic' is:",["Hopeful","Pessimistic","Confident","Realistic"],1],
+["Fill in the blank: If I ___ rich, I would travel the world.",["am","was","were","be"],2],
+["Choose the correct indirect speech: He said, 'I am busy.'",["He said that he is busy.","He said that he was busy.","He says that he was busy.","He said I am busy."],1],
+["Which sentence uses 'their' correctly?",["Their going to the market.","They put their bags down.","Their is a problem.","Their going home now."],1],
+["Choose the correct spelling:",["Occassion","Occasion","Ocasion","Occassionn"],1],
+["A word that means the opposite of 'Genuine' is:",["Real","Authentic","Fake","True"],2]
+];
+
+const MATH = [
+["What is 15% of 200?",["20","25","30","35"],2],
+["Solve: 2 + 2/2 = ?",["2","3","4","6"],1],
+["Factorize: x² + 5x + 6",["(x+2)(x+3)","(x+1)(x+6)","(x-2)(x-3)","(x+6)(x-1)"],0],
+["A car travels 60 km/h. How far in 2.5 hours?",["120 km","130 km","150 km","160 km"],2],
+["A train moves at double the speed of a car. If the car goes at 60 km/h, how far does the train cover in 1 hour?",["100 km","110 km","120 km","130 km"],2],
+["Simplify: (25)^(1/2)",["4","5","6","25"],1],
+["If a shirt costs Rs. 800 after a 20% discount, what was the original price?",["Rs. 960","Rs. 1000","Rs. 1200","Rs. 900"],1],
+["Find the average of 10, 20, 30, 40, 50.",["25","30","35","40"],1],
+["A man's treatment costs 8 lakh but he has 4 lac. What percentage of the cost does he have?",["25%","50%","40%","60%"],1],
+["The next prime number after 17 is:",["18","19","21","23"],1],
+["Solve for x: 3x - 6 = 9",["3","4","5","6"],2],
+["What is the LCM of 4 and 6?",["8","10","12","24"],2],
+["What is the HCF of 12 and 18?",["2","4","6","9"],2],
+["Convert 0.75 to a fraction:",["3/4","7/5","3/5","4/5"],0],
+["A rectangle has length 12 and width 5. Find its area.",["17","30","60","72"],2],
+["If a car's brakes fail at 160 km/h, the safest immediate response is to:",["Turn the ignition off suddenly","Shift to lower gear and use handbrake gradually while steering to a clear runaway area","Jump out of the car","Accelerate to pass all traffic quickly"],1],
+["What is 30% of 150?",["35","40","45","50"],2],
+["Simple interest on Rs. 1000 at 10% for 2 years is:",["Rs. 100","Rs. 150","Rs. 200","Rs. 250"],2],
+["A boat's speed in still water is 10 km/h, current speed 2 km/h. Downstream speed is:",["8 km/h","10 km/h","12 km/h","14 km/h"],2],
+["The sum of angles in a triangle is:",["90°","180°","270°","360°"],1]
+];
+
+const GK = [
+["Canada's national game is:",["Basketball","Hockey","Football","Baseball"],1],
+["Bacteria was first observed/discovered by:",["Louis Pasteur","Antonie van Leeuwenhoek","Robert Koch","Alexander Fleming"],1],
+["The headquarters of OPEC is located in:",["Geneva","Vienna","Paris","Brussels"],1],
+["Who is considered the pioneer of Artificial Intelligence?",["Alan Turing","John McCarthy","Bill Gates","Tim Berners-Lee"],1],
+["The length of the Amazon River is approximately:",["4,000 km","5,200 km","6,400 km","7,000 km"],2],
+["Which is the largest country in the world by population?",["India","China","USA","Indonesia"],1],
+["The old name of Makkah is:",["Yathrib","Bakkah","Taif","Hijaz"],1],
+["Zabih Ullah is the title given to:",["Hazrat Ibrahim (AS)","Hazrat Ismail (AS)","Hazrat Musa (AS)","Hazrat Yousaf (AS)"],1],
+["Rooh-ul-Qudus is the title of:",["Hazrat Jibrael (AS)","Hazrat Mikael (AS)","Hazrat Israfeel (AS)","Hazrat Azrael (AS)"],0],
+["The Battle of Badr took place in:",["1 Hijri","2 Hijri","3 Hijri","5 Hijri"],1],
+["The Battle of Hunayn took place in:",["8 Hijri","9 Hijri","10 Hijri","11 Hijri"],2],
+["The total number of Ayats in Surah Al-Baqarah is:",["255","286","200","300"],1],
+["The first Wahi (revelation) contained how many Ayats of Surah Al-Alaq?",["3","5","7","10"],1],
+["The first Qibla of Muslims was:",["Khana Kaaba","Masjid-e-Aqsa","Masjid-e-Nabawi","Masjid-e-Quba"],1],
+["The tribes 'Aus' and 'Khazraj' were originally situated in:",["Makkah","Madina","Taif","Yemen"],1],
+["Sulah Hudaibiya was signed in:",["5 Hijri / 626 AD","6 Hijri / 628 AD","7 Hijri / 629 AD","9 Hijri / 630 AD"],1],
+["On what occasion did Hazrat Hinda (RA) accept Islam?",["Battle of Badr","Battle of Uhud","Fatah-e-Makkah","Treaty of Hudaibiya"],2],
+["The relation of Hazrat Umme Kulsoom (RA) to the Holy Prophet (PBUH) was that of his:",["Wife","Daughter","Sister","Mother"],1],
+["Which desert lies between India and Pakistan?",["Thar Desert","Sahara Desert","Gobi Desert","Kalahari Desert"],0],
+["The old name of Attock is:",["Campbellpur","Rawalpindi","Peshawar","Jhelum"],0],
+["The Khyber Pass connects Peshawar with:",["Kabul","Landi Kotal / Afghanistan","Quetta","Chaman"],1],
+["The capital of Balochistan is:",["Gwadar","Quetta","Turbat","Sibi"],1],
+["The last emperor of the Mughal Empire was:",["Shah Jahan","Aurangzeb","Bahadur Shah Zafar","Akbar"],2],
+["Pakistan's first constitution was enacted how many years after independence?",["5 years","7 years","9 years","12 years"],2],
+["'Sohni Mahiwal' was written by:",["Fazal Shah","Hashim Shah","Waris Shah","Mian Muhammad Bakhsh"],0],
+["'Heer Ranjha' was written by:",["Waris Shah","Damodar Das Arora","Bulleh Shah","Fazal Shah"],1],
+["Habba Khatoon was a poetess of which language/region?",["Punjabi","Kashmiri","Sindhi","Pashto"],1],
+["The city of Harappa is situated near which present-day city?",["Multan","Sahiwal","Lahore","Bahawalpur"],1],
+["Basha Dam is constructed on which river?",["Jhelum","Chenab","Indus","Kabul"],2],
+["Manchar Lake is located in which district?",["Larkana","Dadu","Sukkur","Thatta"],1],
+["In 1965 (Indo-Pak War), the Pakistan Army Chief was:",["Ayub Khan","General Musa Khan","Yahya Khan","Tikka Khan"],1],
+["Bengal was first partitioned from (British) India in:",["1905","1911","1919","1935"],0],
+["The 1965 war ended with which agreement?",["Simla Agreement","Tashkent Agreement","Lahore Declaration","Karachi Accord"],1],
+["Pakistan's first nuclear test was conducted at:",["Kahuta","Chagai, Balochistan","Sargodha","Multan"],1],
+["Pakistan's first nuclear test date was:",["28 May 1998","11 May 1998","6 September 1998","23 March 1998"],0],
+["India's first nuclear test (Smiling Buddha) was conducted in:",["1971","1974","1980","1998"],1],
+["West Pakistan was merged into a single province under the:",["Objectives Resolution","One Unit Scheme (1955)","18th Amendment","Government of India Act"],1],
+["The 'One Unit Scheme' merging West Pakistan into a single province was implemented in:",["1954","1955","1958","1962"],1],
+["Benazir Bhutto was assassinated in:",["Lahore","Karachi","Rawalpindi","Islamabad"],2],
+["Benazir Bhutto is recognized as:",["First woman President of Pakistan","First woman Prime Minister in the Muslim world","First woman Chief Minister","First woman Speaker"],1],
+["The 18th Amendment to Pakistan's Constitution primarily dealt with:",["Judicial reforms","Provincial autonomy","Election reforms","Defence budget"],1],
+["Pakistan's second Prime Minister was:",["Liaquat Ali Khan","Khawaja Nazimuddin","Chaudhry Muhammad Ali","Feroz Khan Noon"],1],
+["The first civil martial law administrator of Pakistan is generally identified as:",["Ayub Khan","Ghulam Muhammad","Yahya Khan","Iskander Mirza"],3],
+["Freedom of speech is guaranteed under which Article of Pakistan's Constitution?",["Article 9","Article 14","Article 19","Article 25"],2],
+["Which country hosted the G20 Summit in 2023?",["Indonesia","India","Brazil","Italy"],1],
+["Who led the USA during most of World War II?",["Harry Truman","Franklin D. Roosevelt","Woodrow Wilson","Dwight Eisenhower"],1],
+["The movement for Civil Rights of Black Americans is widely regarded to have started/gained major momentum in:",["United Kingdom","South Africa","USA","France"],2],
+["The first census of Pakistan was conducted in:",["1947","1951","1961","1972"],1],
+["Elon Musk purchased the social media platform 'Twitter' (renamed X) — this happened in:",["2020","2021","2022","2023"],2],
+["Iran lies to which direction of Pakistan?",["North","South","East","West"],3],
+["The Quaid-e-Azam Residency associated with his final days is located at:",["Murree","Ziarat","Quetta city","Karachi"],1],
+["The custodianship (protection) of the Holy Quran, as stated in the Quran itself, has been taken up by:",["The Ummah","Scholars","Almighty Allah","The Caliphs"],2]
+];
+
+const CURRENT_AFFAIRS = [
+["The G20 Summit 2025 was hosted by:",["Brazil","India","South Africa","Japan"],2],
+["The Chief Minister of Balochistan (as per recent record, verify before your test) has been:",["Jam Kamal Khan","Abdul Qudus Bizenjo","Sarfraz Bugti","Nawab Aslam Raisani"],1],
+["The current UN Secretary-General's term length is generally:",["4 years","5 years","1 year","10 years"],1],
+["Note: Current affairs change quickly — always cross-check names of sitting office holders (PM, COAS, CMs, etc.) close to your test date.",["Noted","Noted","Noted","Noted"],0]
+];
+
+const ACADEMIC = [
+  ...ENGLISH.map(x=>({...toQ(x),sub:'English'})),
+  ...MATH.map(x=>({...toQ(x),sub:'Math'})),
+  ...GK.map(x=>({...toQ(x),sub:'General Knowledge / Pak Studies / Islamiat'})),
+  ...CURRENT_AFFAIRS.map(x=>({...toQ(x),sub:'Current Affairs'}))
+];
+
+function toQ(arr){return {q:arr[0],opts:arr[1],ans:arr[2]};}
+
+const BANK = {
+  verbal: VERBAL.map(toQ),
+  nonverbal: NONVERBAL.map(toQ),
+  academic: ACADEMIC
+};
+BANK.verbal.forEach((q,i)=>{q.section='verbal';q.id='v'+i;});
+BANK.nonverbal.forEach((q,i)=>{q.section='nonverbal';q.id='n'+i;});
+BANK.academic.forEach((q,i)=>{q.section='academic';q.id='a'+i;});
+
+/* =========================================================================
+   CUSTOM MCQs — added by the student from their own notes, saved offline
+   in localStorage, merged into the Academic pool for Study and Test.
+   ========================================================================= */
+const CUSTOM_KEY = 'fauji_prep_custom_mcqs';
+function loadCustomMcqs(){
+  try{ return JSON.parse(localStorage.getItem(CUSTOM_KEY))||[]; }catch(e){ return []; }
+}
+function saveCustomMcqs(arr){
+  try{ localStorage.setItem(CUSTOM_KEY, JSON.stringify(arr)); }catch(e){}
+}
+function rebuildCustomIntoBank(){
+  // Remove any previously-merged custom questions, then re-merge fresh from storage.
+  BANK.academic = BANK.academic.filter(q=>!q.custom);
+  const custom = loadCustomMcqs();
+  custom.forEach((q,i)=>{
+    BANK.academic.push({q:q.q, opts:q.opts, ans:q.ans, section:'academic', sub:'My Notes', id:'custom'+i, custom:true});
+  });
+}
+rebuildCustomIntoBank();
+
+/* =========================================================================
+   AUTO MCQ GENERATOR — reads pasted notes text and builds fill-in-the-blank
+   MCQs automatically, entirely offline (no AI, just pattern rules: picks
+   numbers, proper-noun terms, or key content words as the blank, and pulls
+   distractors from elsewhere in the same notes).
+   ========================================================================= */
+const STOPWORDS = new Set(['the','and','that','with','from','this','have','has','are','was','were','will','shall','their','which','there','these','those','into','onto','also','such','than','then','when','where','while','been','being','over','under','after','before','about','because','they','them','some','more','most','each','every','only','other','another','both','many','much','very','just','can','could','would','should','not','but','for','you','your','our','his','her','its'].map(w=>w));
+
+function generateMcqsFromNotes(text, maxQuestions){
+  maxQuestions = maxQuestions || 30;
+  // Split into candidate sentences.
+  const rawSentences = text.split(/(?<=[.?!])\s+|\n+/).map(s=>s.trim()).filter(s=>s.length>0);
+  const sentences = rawSentences.filter(s=>{
+    const wc = s.split(/\s+/).length;
+    return wc>=6 && wc<=42;
+  });
+  if(sentences.length===0) return [];
+
+  // Global pools of candidate answer terms found across all notes.
+  const numberPool = Array.from(new Set((text.match(/\b\d{1,4}(\.\d+)?\b/g)||[])));
+  const properPool = Array.from(new Set((text.match(/\b[A-Z][a-zA-Z]{2,}(?:\s[A-Z][a-zA-Z]{2,}){0,2}\b/g)||[])
+    .filter(w=>!STOPWORDS.has(w.toLowerCase()))));
+  const wordPool = Array.from(new Set((text.match(/\b[a-zA-Z]{6,}\b/g)||[])
+    .filter(w=>!STOPWORDS.has(w.toLowerCase()))));
+
+  const used = new Set();
+  const results = [];
+
+  for(const sentence of sentences){
+    if(results.length>=maxQuestions) break;
+    let target=null, type=null;
+    const numMatch = sentence.match(/\b\d{1,4}(\.\d+)?\b/);
+    const properMatches = sentence.match(/\b[A-Z][a-zA-Z]{2,}(?:\s[A-Z][a-zA-Z]{2,}){0,2}\b/g);
+    const properCandidate = properMatches ? properMatches.find((w,i)=> !(sentence.indexOf(w)===0) && !STOPWORDS.has(w.toLowerCase())) : null;
+    if(numMatch){ target=numMatch[0]; type='number'; }
+    else if(properCandidate){ target=properCandidate; type='proper'; }
+    else {
+      const words = sentence.match(/\b[a-zA-Z]{6,}\b/g)||[];
+      const wordCandidate = words.find(w=>!STOPWORDS.has(w.toLowerCase()));
+      if(wordCandidate){ target=wordCandidate; type='word'; }
+    }
+    if(!target) continue;
+    const dedupeKey = sentence+'|'+target;
+    if(used.has(dedupeKey)) continue;
+    used.add(dedupeKey);
+
+    // Build distractor pool matching type first, falling back to other pools.
+    let pool = type==='number' ? numberPool.slice() : type==='proper' ? properPool.slice() : wordPool.slice();
+    pool = pool.filter(w=>w.toLowerCase()!==target.toLowerCase());
+    // top up with other pools if not enough distinct distractors
+    if(pool.length<3){ pool = pool.concat(properPool, wordPool, numberPool).filter(w=>w.toLowerCase()!==target.toLowerCase()); }
+    pool = Array.from(new Set(pool));
+    shuffle(pool);
+    let distractors = pool.slice(0,3);
+    // if still short (very small notes), pad with tweaked numbers or generic filler
+    while(distractors.length<3){
+      if(type==='number'){ distractors.push(String(parseInt(target,10)+ (distractors.length+1)*2)); }
+      else { distractors.push(target+' (other)'); }
+    }
+    const blanked = sentence.replace(target, '_____');
+    const opts = shuffle([target, ...distractors]);
+    const ans = opts.indexOf(target);
+    results.push({q:'Fill in the blank: '+blanked, opts, ans});
+    if(results.length>=maxQuestions) break;
+  }
+  return results;
+}
+
+let ALL_Q = [...BANK.verbal, ...BANK.nonverbal, ...BANK.academic];
+function refreshAllQ(){
+  rebuildCustomIntoBank();
+  ALL_Q = [...BANK.verbal, ...BANK.nonverbal, ...BANK.academic];
+}
+
+/* =========================================================================
+   SRT BANK (extracted & consolidated from practice sets)
+   ========================================================================= */
+const SRT_BANK = [
+"You have to take the train after receiving your call from ISSB. When you arrive at the station, the train is about to depart and there is hardly any time to buy a ticket. What will be your next move?",
+"You applied for Pak Army but are very close to the age limit — this is your last chance. The academic paper feels too challenging to answer successfully. What should you do?",
+"You are in a shopping centre's parking lot. Suddenly the lights go out, leaving everything in darkness. What will you do?",
+"You have recently passed matric and joined a college in a different city. You enroll in the hostel and find your roommate is not very friendly. What will you do?",
+"You planned a trip with a college friend, and on the way, one of your friends says something hateful that spoils your mood. What will you do?",
+"You passed FSC with a good score and were listed among the top 100 students receiving a cash prize of Rs. 500,000. What would you do with this money?",
+"A significant disease outbreak has hit your village; residents are shifting from their homes. What would you do?",
+"You are studying late at night before an exam. Four masked men enter your neighbour's home and you overhear one say 'let's finish in 15 minutes'. What will you do?",
+"What will you do if your elder brother engages in wrongdoing?",
+"You are a newly joined Army officer in an exercise area with a manpower shortage. A soldier requests leave saying his mother is ill, but you suspect he may be misrepresenting the situation. How will you proceed?",
+"You are going with your sister to drop her at college and notice a person on a bike following you. What would you do?",
+"You are an officer in an operational area with weak mobile signal. Your girlfriend calls saying her parents are forcing her marriage and she has run away, then the call drops. What will you do?",
+"As a newly commissioned officer, you attend your cousin's wedding when police raid and arrest her husband. Would you use your influence to get him released? Give reasons either way.",
+"A friend asks you to take a puff of his vape, and you learn it contains a drug. What would you do?",
+"A woman driving believes she killed a person who was actually hit and killed accidentally by you and another car simultaneously. How will you proceed?",
+"You see an injured person on the road while heading to a job interview. What will you do?",
+"After being promoted to mess secretary, your senior officer instructs you to overbill people. How will you respond?",
+"A stranger is following you while you are with your sister. What will be your reaction?",
+"You witness people stealing necessities from a store during a crisis. How will you respond?",
+"A dog bites you and steals meat you were carrying home. What will be your next move?",
+"You are your parents' only son; they want you to marry, but marrying now would stop you from joining the Army. How will you manage this?",
+"An old man keeps staring and blinking at you in public. What will you do?",
+"The wife of your police chief's brother tells you her husband abuses her, and your chief forbids you from acting. What will you do?",
+"While driving, a motorcyclist cuts you off and crashes, losing consciousness, with no hospital within 30 km. What will you do?",
+"Your friend has become an atheist. What will you do?",
+"A friend attends parties and does wrong activities there; his father is seriously ill and cannot be told. What will you do?",
+"Your father is a shopkeeper with low income; your friends want you to contribute cash to a party, and you know money is in your father's shop. What will you do?",
+"A wealthy family offers to pay for your mother's cancer treatment if you marry their widowed daughter. Will you marry her?",
+"A time bomb will explode in five seconds in a closed room where you and your commander are both present. What will you do to save both lives?",
+"You cannot swim and your mother is drowning in a pond with no one to help. What will you do?",
+"A blind person falls in front of you while you are with friends who start laughing at him. What would you do?",
+"You and an older female colleague are on a mission together. She asks you to start a secret relationship. What will you do?",
+"Your wife disallows you from visiting your critically ill mother, while your son is also admitted to hospital and needs your company. What would you do?",
+"You have a stable job and like a girl from a poor family, but your parents disapprove. Will you marry her or not?",
+"Your car is travelling at 160 km/h on the motorway and the brakes fail. What will you do?",
+"Your mother is in critical condition due to illness, you are the only family member available, and your boss won't let you leave. What will you do?",
+"A woman in critical condition needs Rs. 8 lakh for treatment but only has Rs. 4 lakh. What will you do to help her?",
+"As a Major, you are tasked to evacuate soldiers from a burning naval ship. On the way you find a small boat with 3 sinking civilians. What will you do?",
+"Your cousin, a drug addict, is caught cheating in an exam. Reporting him to university authorities will end his career. What will you do?",
+"Will you accept your sister's friend request if you see it on Facebook? If not, why not?",
+"Imagine you have passed away and are granted one wish to return and fulfil. What is your response and reasoning?",
+"You have a foreign scholarship opportunity at PMA, but your physical fitness level is not good enough. Will you go abroad to represent your country?",
+"Your younger brother is struggling academically due to excessive mobile use and is not obedient. How will you handle this?",
+"You are lost in a jungle at night with no way to contact anyone. How will you manage?",
+"You committed a mistake; admitting it will bring social criticism, but hiding it means no consequences. How will you proceed?",
+"A friend has developed a bad habit; you and his father have advised him but he won't listen. How will you respond?",
+"You are assigned a secret work mission, but your family won't permit you to go. How will you manage this?",
+"A person steals from a bank and distributes the money to the poor. You know who did it. What will you do?",
+"A top student was ill and unprepared for midterms but scored well, and the teacher later learns he cheated. What should the teacher do?"
+];
+
+/* =========================================================================
+   WAT BANK
+   ========================================================================= */
+const WAT_BANK = ["Cinema","Affection","Lonely","Action","Ghost","Break","Fit","Dislike","Good","Challenges",
+"Patience","Smoke","Heart","Difficult","Describe","Decide","Well","Eat","Work","Service","Think","Shoot","Goal",
+"Puzzle","Busy","Joy","Dirt","Help","Pain","Fail","Insist","Confidence","Serious","Truth","Lose","Leader",
+"Sacrifice","Curiosity","Fight","Solve","Compel","Idea","Trouble","Cooperation","Neglect","Risk","Climb","Step",
+"Win","Struggle","Store","Change","Opportunity","Beautiful","Journey","Flow","Cooperate","Efficiency","Seriously",
+"Sensible","Refrain","Pleasure","Worry","Punish","Resist","Hate","Insult","Failure","Impossible","Secret","Rigid",
+"Influence","Evil","Accept","Country","Company","Love","Duty","Enjoy","Trust","Success","Defeat","Attack","Afraid",
+"Danger","Encourage","Assist","Discipline","Decision","Award","Withdraw","Enemy","Soldier","Uniform","Border",
+"Command","Honour","Courage","Team","Victory","Hardship","Discipline","Motherland","Duty-bound"
+];
+
+/* =========================================================================
+   TAT (Thematic Apperception Test) — Picture Story Bank
+   Real TAT plates are copyrighted psychological test material, so we use
+   stable placeholder photos (fixed seed = same picture every time you reach
+   that number, never random) as practice stand-ins for ambiguous scenes.
+   ========================================================================= */
+const TAT_SEEDS = ["issb1","issb2","issb3","issb4","issb5","issb6","issb7","issb8",
+"issb9","issb10","issb11","issb12","issb13","issb14","issb15","issb16","issb17","issb18"];
+
+/* =========================================================================
+   INTERVIEW Q&A BANK
+   ========================================================================= */
+const INTERVIEW_QA = [
+["Psychologist Officer","Introduce yourself."],
+["Officer / Panel","Why do you want to join the Pakistan Army / Navy / Air Force?"],
+["Medical Officer (AMC)","What are the main duties of a Medical Cadet in the Army?"],
+["Psychologist Officer","If you are not selected this time, what will be your next step?"],
+["Panel President","Are you willing to serve anywhere, including border or war zones?"],
+["Medical Officer (AMC)","What is the major difference between Army hospitals and civilian hospitals?"],
+["Psychologist Officer","Tell me about a difficult moment in your life and how you handled it."],
+["Panel President","Why should the Army invest in your training?"],
+["Medical Officer (AMC)","Define shock and name its main types."],
+["Psychologist Officer","What makes you different from the other candidates sitting outside?"],
+["Panel President","If your family disagrees with your decision to join the Army, what will you do?"],
+["Medical Officer (AMC)","How would you communicate with a soldier who refuses treatment out of fear?"],
+["Psychologist Officer","What triggers anger in you, and how do you control it?"],
+["Panel President","What do you know about the structure of the Army Medical Corps / your chosen branch?"],
+["Psychologist Officer","Are you emotionally stable? How would you prove it?"],
+["Panel President","How will you balance discipline with empathy in service life?"],
+["Medical Officer (AMC)","What would you do if you found medical negligence within your team?"],
+["General","Tell me about your family background."],
+["General","What are your strengths and weaknesses?"],
+["General","Why did you choose this particular branch/course?"],
+["General","What do you know about current events in Pakistan and the world?"],
+["General","What are your hobbies, and how do they help build officer-like qualities?"],
+["General","Describe your daily routine."],
+["General","Who is your role model, and why?"],
+["General","How do you handle failure or rejection?"],
+["General","What will you do if you face a moral conflict between orders and personal conscience?"]
+];
+
+/* =========================================================================
+   GTO / ISSB PROCESS INFO (from published ISSB guidance)
+   ========================================================================= */
+const GTO_INFO = [
+["The 5-Day ISSB Process","ISSB is a multi-day selection process (commonly referred to as 4-5 days) held at centres in Kohat, Gujranwala, Malir (Karachi) and Quetta. It uses three independent assessors — a Psychologist, a Group Testing Officer (GTO), and the Interviewing Officer/President — who each observe you differently and then reach a joint 'Conference' decision."],
+["Day 1 — Screening","Verbal and Non-Verbal Intelligence Tests, followed by written psychological tests: Thematic Apperception Test (TAT/Picture Story), Word Association Test (WAT), Situation Reaction Test (SRT), and Self-Description. Only candidates who clear screening continue to the following days."],
+["Psychologist's Tests","The psychologist assesses personality, motivation and emotional stability through WAT (word association), TAT (picture-based story writing), SRT (quick written reactions to everyday and moral situations), and a Self Description / Self Appraisal exercise."],
+["GTO Day 1 — Group Tasks","Group Discussion (an informal discussion on a given topic in English/Urdu), Lecturette (a short prepared talk on a chosen topic), Group Planning Exercise (military-style problem solving as a team), Progressive Group Task (PGT — a series of obstacles solved together with equipment), and Half Group Task (HGT)."],
+["GTO Day 2 — Individual & Command Tasks","Command Task: you are made the leader/commander of 2-3 subordinates (chosen from your own group) and must solve an obstacle using them, showing planning and leadership under observation. Individual Obstacles: a timed set of physical obstacles attempted solo for points. Final Group Task and Group assessment of each other's performance also occur here."],
+["What GTO Looks For","Initiative, practical and logical planning, physical courage balanced with sensible risk-taking, cooperation, ability to lead as well as follow, and consistency of behaviour across all tasks — not just physical fitness."],
+["The Interview","Conducted by the President/Deputy President, sometimes alongside the Psychologist or a subject-matter officer (e.g., a Medical Officer for AMC). Expect questions on your background, motivation, general knowledge/current affairs, hobbies, and hypothetical service situations. Consistency with what you wrote in your PIQ (Personal Information Questionnaire) and psych tests matters."],
+["Key Preparation Tips","Be natural — psychologists are trained to spot rehearsed or fake answers. In WAT/SRT, keep responses simple, positive, practical and socially responsible rather than extreme or dramatic. In GTO tasks, offer solutions and cooperate rather than dominating or staying silent. Stay physically fit for the outdoor tasks and obstacles."]
+];
+
+/* =========================================================================
+   APP STATE & RENDERING
+   ========================================================================= */
+let STATE = {
+  view:'home',
+  test:null,
+  srtIndex:0,
+  srtTimer:null,
+  srtSeconds:30,
+  watIndex:0,
+  watTimer:null,
+  watSeconds:15,
+  watRunning:false,
+  tatIndex:0,
+  tatTimer:null,
+  tatSeconds:30,
+  tatRunning:false,
+  studyFilter:'all',
+  studySearch:'',
+  showAddMcq:false,
+  showAiGen:false,
+  aiGenLoading:false,
+  aiGenError:null,
+  aiGenerated:[],
+  aiNotesDraft:'',
+  fileParsing:false,
+  fileParseError:null
+};
+
+function loadSave(){
+  try{return JSON.parse(localStorage.getItem('fauji_prep_data'))||{attempts:[],best:0};}catch(e){return {attempts:[],best:0};}
+}
+function saveSave(d){ try{localStorage.setItem('fauji_prep_data', JSON.stringify(d));}catch(e){} }
+let SAVE = loadSave();
+
+function rankFor(pct){
+  if(pct>=90) return {label:'Officer Cadet', stars:5};
+  if(pct>=75) return {label:'Senior Cadet', stars:4};
+  if(pct>=60) return {label:'Cadet', stars:3};
+  if(pct>=40) return {label:'Recruit (Trained)', stars:2};
+  return {label:'Recruit', stars:1};
+}
+
+function shuffle(arr){
+  const a=arr.slice();
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function el(html){const d=document.createElement('div');d.innerHTML=html.trim();return d.firstChild;}
+
+function setView(v){STATE.view=v;render();}
+
+function render(){
+  const app=document.getElementById('app');
+  const bestPct = SAVE.best||0;
+  const rank = rankFor(bestPct);
+  let starsHtml='';
+  for(let i=0;i<5;i++) starsHtml += `<div class="star ${i<rank.stars?'filled':''}"></div>`;
+
+  let body='';
+  if(STATE.view==='home') body = renderHome();
+  else if(STATE.view==='study') body = renderStudy();
+  else if(STATE.view==='testsetup') body = renderTestSetup();
+  else if(STATE.view==='testrun') body = renderTestRun();
+  else if(STATE.view==='testresult') body = renderTestResult();
+  else if(STATE.view==='issb') body = renderIssb();
+
+  app.innerHTML = `
+    <div class="topbar">
+      <div class="brand">
+        <div class="badge"><span>FP</span></div>
+        <div>
+          <h1>Fauji Prep</h1>
+          <small>PMA Initial Test &amp; ISSB Simulator</small>
+        </div>
+      </div>
+      <div class="rank-box">
+        <div class="rank-stars">${starsHtml}</div>
+        <div>
+          <div class="rank-label">${rank.label}</div>
+          <div class="rank-sub">Best score: ${bestPct}%</div>
+        </div>
+      </div>
+    </div>
+    <div class="nav">
+      <button data-nav="home" class="${STATE.view==='home'?'active':''}">Home</button>
+      <button data-nav="study" class="${STATE.view==='study'?'active':''}">Study Notes</button>
+      <button data-nav="testsetup" class="${(STATE.view==='testsetup'||STATE.view==='testrun'||STATE.view==='testresult')?'active':''}">Practice Test</button>
+      <button data-nav="issb" class="${STATE.view==='issb'?'active':''}">ISSB Prep</button>
+    </div>
+    ${body}
+    <div class="footer-note">Built from your own uploaded notes &amp; general ISSB guidance. Current-affairs items (office holders, recent events) can change — please verify close to your test date.</div>
+  `;
+
+  app.querySelectorAll('[data-nav]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const v=b.getAttribute('data-nav');
+      if(v==='testsetup'){STATE.test=null;}
+      setView(v);
+    });
+  });
+
+  wireViewEvents();
+}
+
+/* ---------------- HOME ---------------- */
+function renderHome(){
+  return `
+  <div class="cards">
+    <div class="card" data-nav="study">
+      <div class="tag">// 01 STUDY</div>
+      <h3>Study Notes</h3>
+      <p>Browse every MCQ with its correct answer first — Verbal, Non-Verbal, English, Math, GK, Pak Studies, Islamiat &amp; Current Affairs. Filter and search freely.</p>
+    </div>
+    <div class="card" data-nav="testsetup">
+      <div class="tag">// 02 SIMULATE</div>
+      <h3>Practice Test (Mock Exam)</h3>
+      <p>A timed, mixed-order test — verbal, non-verbal and academic MCQs all shuffled together, exactly like the real initial test. New random set every attempt.</p>
+    </div>
+    <div class="card" data-nav="issb">
+      <div class="tag">// 03 ISSB</div>
+      <h3>ISSB Prep</h3>
+      <p>SRT practice with a countdown timer, WAT flash-word drills, real interview Q&amp;A, and a guide to GTO tasks, Command Tasks &amp; how the whole ISSB process works.</p>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:16px;">
+    <h3 style="margin-bottom:10px;">Bank size</h3>
+    <div class="breakdown">
+      <div><b>${BANK.verbal.length}</b>Verbal</div>
+      <div><b>${BANK.nonverbal.length}</b>Non-Verbal</div>
+      <div><b>${BANK.academic.length}</b>Academic (mixed)</div>
+      <div><b>${SRT_BANK.length}</b>SRT Situations</div>
+      <div><b>${WAT_BANK.length}</b>WAT Words</div>
+      <div><b>${INTERVIEW_QA.length}</b>Interview Q&amp;A</div>
+    </div>
+    <p style="color:var(--text-dim);font-size:13px;">This is a starter bank built from your uploaded material plus supporting practice questions — every section is coded as a plain JS array near the top of this file (VERBAL, NONVERBAL, ENGLISH, MATH, GK, CURRENT_AFFAIRS, SRT_BANK, WAT_BANK) so you — or I, next time — can keep adding more questions to it.</p>
+  </div>
+  `;
+}
+
+/* ---------------- STUDY NOTES ---------------- */
+function renderStudy(){
+  const filters = [
+    {k:'all',label:'All'},
+    {k:'verbal',label:'Verbal'},
+    {k:'nonverbal',label:'Non-Verbal'},
+    {k:'English',label:'English'},
+    {k:'Math',label:'Math'},
+    {k:'General Knowledge / Pak Studies / Islamiat',label:'GK / Pak Studies / Islamiat'},
+    {k:'Current Affairs',label:'Current Affairs'},
+    {k:'My Notes',label:'My MCQs'}
+  ];
+  let list = ALL_Q;
+  if(STATE.studyFilter!=='all'){
+    list = ALL_Q.filter(q=> (q.sub===STATE.studyFilter) || (q.section===STATE.studyFilter && !q.sub));
+  }
+  if(STATE.studySearch){
+    const s=STATE.studySearch.toLowerCase();
+    list = list.filter(q=>q.q.toLowerCase().includes(s));
+  }
+  const itemsHtml = list.map(q=>`
+    <div class="note-item">
+      <div class="q">${q.q}</div>
+      <div class="a">✔ ${q.opts[q.ans]}</div>
+      ${q.custom?`<button class="btn ghost" data-delcustom="${q.id}" style="margin-top:8px;font-size:12px;padding:6px 12px;">Delete</button>`:''}
+    </div>
+  `).join('');
+  const customCount = loadCustomMcqs().length;
+  return `
+  <div class="panel">
+    <h2 style="font-size:20px;margin-bottom:12px;">Study Notes — Questions &amp; Answers</h2>
+    <input class="searchbox" id="studySearchInput" type="text" placeholder="Search questions..." value="${STATE.studySearch}">
+    <div class="filterbar">
+      ${filters.map(f=>`<button data-filter="${f.k}" class="${STATE.studyFilter===f.k?'active':''}">${f.label}</button>`).join('')}
+    </div>
+    <div class="row" style="margin:14px 0;">
+      <button class="btn" id="toggleAddMcqBtn">${STATE.showAddMcq?'Close Form':'+ Add Your Own MCQ'}</button>
+      <button class="btn" id="toggleAiGenBtn">${STATE.showAiGen?'Close AI Generator':'✨ Generate MCQs From Notes (AI)'}</button>
+      <span style="color:var(--text-dim);font-size:12.5px;align-self:center;">${customCount} custom question${customCount===1?'':'s'} saved so far — these also appear in your practice tests.</span>
+    </div>
+    ${STATE.showAiGen?renderAiGenForm():''}
+    ${STATE.showAddMcq?renderAddMcqForm():''}
+    <div>${itemsHtml || '<p style="color:var(--text-dim)">No questions match.</p>'}</div>
+  </div>
+  `;
+}
+
+function renderAddMcqForm(){
+  return `
+  <div class="panel" style="background:rgba(255,255,255,0.03);margin-bottom:14px;">
+    <label>Question</label>
+    <textarea id="mcqQ" placeholder="Type the question from your notes..." style="min-height:60px;"></textarea>
+    <label>Option A</label><input class="searchbox" id="mcqOptA" type="text" placeholder="Option A">
+    <label>Option B</label><input class="searchbox" id="mcqOptB" type="text" placeholder="Option B">
+    <label>Option C</label><input class="searchbox" id="mcqOptC" type="text" placeholder="Option C">
+    <label>Option D</label><input class="searchbox" id="mcqOptD" type="text" placeholder="Option D">
+    <label>Correct option</label>
+    <select id="mcqCorrect" class="searchbox">
+      <option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option>
+    </select>
+    <p id="mcqFormError" style="display:none;color:var(--rust-bright);font-size:12px;margin:6px 0 0;">Please fill in the question and all 4 options.</p>
+    <div class="row" style="margin-top:12px;">
+      <button class="btn" id="mcqSaveBtn">Save MCQ</button>
+    </div>
+  </div>
+  `;
+}
+
+/* ---------------- TEST SETUP ---------------- */
+function renderTestSetup(){
+  return `
+  <div class="panel">
+    <h2 style="font-size:20px;margin-bottom:14px;">Set Up Your Practice Test</h2>
+    <div class="row" style="margin-bottom:14px;">
+      <div>
+        <label>Total questions</label>
+        <select id="cfgTotal">
+          <option value="20">20 (quick)</option>
+          <option value="50" selected>50 (full mock)</option>
+          <option value="80">80 (extended)</option>
+        </select>
+      </div>
+      <div>
+        <label>Time limit</label>
+        <select id="cfgTime">
+          <option value="15">15 minutes</option>
+          <option value="30">30 minutes</option>
+          <option value="45" selected>45 minutes</option>
+          <option value="60">60 minutes</option>
+        </select>
+      </div>
+    </div>
+    <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">Questions come as 3 separate blocks — Verbal, then Non-Verbal, then Academic — just like the real initial test. Each block is freshly shuffled every attempt.</p>
+    <button class="btn rust" id="startTestBtn">Start Test</button>
+  </div>
+  `;
+}
+
+function buildTest(total,minutes){
+  const ratioV=0.28, ratioN=0.2; // rest academic
+  let nV=Math.round(total*ratioV), nN=Math.round(total*ratioN);
+  let nA=total-nV-nN;
+  nV=Math.min(nV,BANK.verbal.length);
+  nN=Math.min(nN,BANK.nonverbal.length);
+  nA=Math.min(nA,BANK.academic.length);
+  // Each section is its own shuffled block (Verbal block -> Non-Verbal block -> Academic block),
+  // matching the real PMA initial test format instead of interleaving everything.
+  let vBlock = shuffle(BANK.verbal).slice(0,nV).map(prepQuestion);
+  let nBlock = shuffle(BANK.nonverbal).slice(0,nN).map(prepQuestion);
+  let aBlock = shuffle(BANK.academic).slice(0,nA).map(prepQuestion);
+  let picked=[...vBlock, ...nBlock, ...aBlock];
+  // top up if short (append to academic tail, keeping verbal/non-verbal blocks intact)
+  while(picked.length<total){
+    const rest = shuffle(ALL_Q).find(q=>!picked.some(p=>p.id===q.id));
+    if(!rest) break;
+    picked.push(prepQuestion(rest));
+  }
+  return {
+    questions: picked,
+    answers: new Array(picked.length).fill(null),
+    current: 0,
+    secondsLeft: minutes*60,
+    startedAt: Date.now(),
+    finished:false
+  };
+}
+
+// Builds a fresh question object with shuffled options and the correct _newAns
+// baked in BEFORE the object is used anywhere, so it's never lost (fixes the
+// "undefined" correct-answer bug).
+function prepQuestion(q){
+  const correctText = q.opts[q.ans];
+  const shuffledOpts = shuffle(q.opts);
+  const newAns = shuffledOpts.indexOf(correctText);
+  return {...q, opts: shuffledOpts, _newAns: newAns};
+}
+
+/* ---------------- TEST RUN ---------------- */
+function renderTestRun(){
+  const t = STATE.test;
+  const q = t.questions[t.current];
+  const pct = Math.round(((t.current)/t.questions.length)*100);
+  const mm = Math.floor(t.secondsLeft/60), ss=String(t.secondsLeft%60).padStart(2,'0');
+  const low = t.secondsLeft<=60;
+  const navgrid = t.questions.map((qq,i)=>{
+    let cls='';
+    if(i===t.current) cls='current';
+    else if(t.answers[i]!==null) cls='answered';
+    return `<span data-jump="${i}" class="${cls}">${i+1}</span>`;
+  }).join('');
+
+  const optsHtml = q.opts.map((opt,i)=>{
+    const sel = t.answers[t.current]===i ? 'selected':'';
+    return `<button class="opt ${sel}" data-opt="${i}">${opt}</button>`;
+  }).join('');
+
+  const sectionLabel = q.section==='academic' ? ('Academic — '+q.sub) : (q.section==='verbal'?'Verbal':'Non-Verbal');
+
+  return `
+  <div class="panel">
+    <div class="qhead">
+      <div class="qcount">Question ${t.current+1} / ${t.questions.length}</div>
+      <div class="timer ${low?'low':''}">${mm}:${ss}</div>
+    </div>
+    <div class="progress-bar"><div style="width:${pct}%"></div></div>
+    <div class="qsection-tag">${sectionLabel}</div>
+    <div class="qtext">${q.q}</div>
+    <div>${optsHtml}</div>
+    <div class="navrow">
+      <button class="btn ghost" id="prevQ" ${t.current===0?'disabled':''}>&larr; Previous</button>
+      ${t.current===t.questions.length-1 ?
+        `<button class="btn rust" id="submitTest">Submit Test</button>` :
+        `<button class="btn" id="nextQ">Next &rarr;</button>`}
+    </div>
+    <div class="navgrid">${navgrid}</div>
+  </div>
+  `;
+}
+
+function tickTimer(){
+  if(!STATE.test || STATE.test.finished) return;
+  STATE.test.secondsLeft--;
+  if(STATE.test.secondsLeft<=0){
+    STATE.test.secondsLeft=0;
+    finishTest();
+    return;
+  }
+  // light update: just re-render timer text without full rerender for perf
+  render();
+}
+let TEST_TIMER_HANDLE=null;
+
+function finishTest(){
+  STATE.test.finished=true;
+  const t=STATE.test;
+  let correct=0;
+  t.questions.forEach((q,i)=>{ if(t.answers[i]===q._newAns) correct++; });
+  const pct = Math.round((correct/t.questions.length)*100);
+  SAVE.attempts.push({date:new Date().toISOString(),score:pct,total:t.questions.length,correct});
+  if(pct>SAVE.best) SAVE.best=pct;
+  saveSave(SAVE);
+  clearInterval(TEST_TIMER_HANDLE);
+  setView('testresult');
+}
+
+function renderTestResult(){
+  const t=STATE.test;
+  let correct=0, bySection={verbal:{c:0,t:0},nonverbal:{c:0,t:0},academic:{c:0,t:0}};
+  t.questions.forEach((q,i)=>{
+    bySection[q.section].t++;
+    if(t.answers[i]===q._newAns){correct++;bySection[q.section].c++;}
+  });
+  const pct=Math.round((correct/t.questions.length)*100);
+  const reviewHtml = t.questions.map((q,i)=>{
+    const userAns = t.answers[i];
+    const right = userAns===q._newAns;
+    return `
+      <div class="review-item ${right?'right':'wrong'}">
+        <div style="font-size:13px;color:var(--text-dim);margin-bottom:4px;">Q${i+1} — ${q.section==='academic'?q.sub:q.section}</div>
+        <div style="margin-bottom:6px;">${q.q}</div>
+        <div style="font-size:13px;">Your answer: <b>${userAns!==null?q.opts[userAns]:'(skipped)'}</b></div>
+        ${!right?`<div style="font-size:13px;color:var(--ok);">Correct answer: <b>${q.opts[q._newAns]}</b></div>`:''}
+      </div>
+    `;
+  }).join('');
+
+  return `
+  <div class="panel">
+    <h2 style="font-size:20px;margin-bottom:10px;">Result</h2>
+    <div class="score-big">${pct}%</div>
+    <p style="color:var(--text-dim);margin:6px 0 16px;">${correct} correct out of ${t.questions.length}</p>
+    <div class="breakdown">
+      <div><b>${bySection.verbal.c}/${bySection.verbal.t}</b>Verbal</div>
+      <div><b>${bySection.nonverbal.c}/${bySection.nonverbal.t}</b>Non-Verbal</div>
+      <div><b>${bySection.academic.c}/${bySection.academic.t}</b>Academic</div>
+    </div>
+    <div class="row">
+      <button class="btn rust" id="retakeBtn">New Random Test</button>
+      <button class="btn ghost" data-nav="home">Back to Home</button>
+    </div>
+  </div>
+  <div class="panel">
+    <h3 style="margin-bottom:12px;">Review</h3>
+    ${reviewHtml}
+  </div>
+  `;
+}
+
+/* ---------------- ISSB PREP ---------------- */
+let ISSB_TAB='srt';
+function renderIssb(){
+  const tabs=[['srt','SRT Practice'],['wat','WAT Practice'],['tat','TAT Picture Story'],['interview','Interview Q&A'],['gto','GTO & Process Guide']];
+  let body='';
+  if(ISSB_TAB==='srt') body=renderSrt();
+  else if(ISSB_TAB==='wat') body=renderWat();
+  else if(ISSB_TAB==='tat') body=renderTat();
+  else if(ISSB_TAB==='interview') body=renderInterview();
+  else if(ISSB_TAB==='gto') body=renderGto();
+
+  return `
+  <div class="subnav">
+    ${tabs.map(t=>`<button data-issbtab="${t[0]}" class="${ISSB_TAB===t[0]?'active':''}">${t[1]}</button>`).join('')}
+  </div>
+  ${body}
+  `;
+}
+
+function renderSrt(){
+  const situation = SRT_BANK[STATE.srtIndex % SRT_BANK.length];
+  return `
+  <div class="panel">
+    <div class="qhead">
+      <div class="qcount">Situation ${(STATE.srtIndex % SRT_BANK.length)+1} / ${SRT_BANK.length}</div>
+      <div class="timer ${STATE.srtSeconds<=10?'low':''}" id="srtTimerDisplay">${STATE.srtSeconds}s</div>
+    </div>
+    <div class="srt-box">${situation}</div>
+    <label>Write your immediate, practical reaction (real SRT gives ~30 seconds each):</label>
+    <textarea id="srtAnswer" placeholder="Type your reaction..."></textarea>
+    <div class="row" style="margin-top:14px;">
+      <button class="btn" id="srtStartBtn">${STATE.srtRunning?'Restart Timer':'Start 30s Timer'}</button>
+      <button class="btn ghost" id="srtNextBtn">Next Situation &rarr;</button>
+    </div>
+  </div>
+  <div class="panel">
+    <h4 style="font-family:'Oswald';color:var(--khaki);text-transform:uppercase;font-size:14px;margin-bottom:8px;">Tip</h4>
+    <p style="color:var(--text-dim);font-size:13.5px;line-height:1.6;">Keep the reaction realistic, calm, and action-oriented — a normal, sensible person's response, not a heroic or extreme one. Avoid escaping the problem, blaming others, or freezing.</p>
+  </div>
+  `;
+}
+
+function renderWat(){
+  const word = WAT_BANK[STATE.watIndex % WAT_BANK.length];
+  return `
+  <div class="panel">
+    <div class="qhead">
+      <div class="qcount">Word ${(STATE.watIndex % WAT_BANK.length)+1} / ${WAT_BANK.length}</div>
+      <div class="timer ${STATE.watSeconds<=5?'low':''}" id="watTimerDisplay">${STATE.watSeconds}s</div>
+    </div>
+    <div class="wat-word">${word}</div>
+    <label>Write the first sentence that comes to mind (real WAT gives ~15 seconds):</label>
+    <textarea id="watAnswer" style="min-height:60px;" placeholder="Type your sentence..."></textarea>
+    <div class="row" style="margin-top:14px;">
+      <button class="btn" id="watStartBtn">${STATE.watRunning?'Restart Timer':'Start 15s Timer'}</button>
+      <button class="btn ghost" id="watNextBtn">Next Word &rarr;</button>
+    </div>
+  </div>
+  <div class="panel">
+    <h4 style="font-family:'Oswald';color:var(--khaki);text-transform:uppercase;font-size:14px;margin-bottom:8px;">Tip</h4>
+    <p style="color:var(--text-dim);font-size:13.5px;line-height:1.6;">Write the first positive, natural sentence — don't overthink. Avoid negative or violent associations; keep sentences short, simple and constructive.</p>
+  </div>
+  `;
+}
+
+function renderTat(){
+  const idx = STATE.tatIndex % TAT_SEEDS.length;
+  const svgUri = generateTatScene(TAT_SEEDS[idx]);
+  return `
+  <div class="panel">
+    <div class="qhead">
+      <div class="qcount">Picture ${idx+1} / ${TAT_SEEDS.length}</div>
+      <div class="timer ${STATE.tatSeconds<=10?'low':''}" id="tatTimerDisplay">${STATE.tatSeconds}s</div>
+    </div>
+    <img src="${svgUri}" alt="TAT practice picture" style="width:100%;height:auto;display:block;margin-bottom:16px;border:1px solid var(--line);">
+    <label>Write a short story: who are the people, what led to this moment, what happens next (real TAT gives ~30s to view + ~4 min to write):</label>
+    <textarea id="tatAnswer" placeholder="Type your story..."></textarea>
+    <div class="row" style="margin-top:14px;">
+      <button class="btn" id="tatStartBtn">${STATE.tatRunning?'Restart Timer':'Start 30s Viewing Timer'}</button>
+      <button class="btn ghost" id="tatNextBtn">Next Picture &rarr;</button>
+    </div>
+  </div>
+  <div class="panel">
+    <h4 style="font-family:'Oswald';color:var(--khaki);text-transform:uppercase;font-size:14px;margin-bottom:8px;">Tip</h4>
+    <p style="color:var(--text-dim);font-size:13.5px;line-height:1.6;">Give the story a positive, believable direction: normal people, a clear problem, and a constructive resolution driven by the hero. Avoid tragic, violent, or vague endings.</p>
+  </div>
+  `;
+}
+
+// Deterministic tiny PRNG so the same seed always draws the same scene (no network call).
+function seededRand(seed){
+  let h=0; for(let i=0;i<seed.length;i++){ h=Math.imul(31,h)+seed.charCodeAt(i)|0; }
+  return function(){ h=Math.imul(h^(h>>>15),h|1); h^=h+Math.imul(h^(h>>>7),h|61); return ((h^(h>>>14))>>>0)/4294967296; };
+}
+function drawFigure(x,groundY,fh,pose,rnd){
+  // pose: 'stand' | 'point' | 'sit' | 'carry'
+  const headR=fh*0.11, y=groundY-fh;
+  let arms='';
+  if(pose==='point'){
+    arms=`<line x1="${x+fh*0.09}" y1="${y+fh*0.15}" x2="${x+fh*0.4}" y2="${y+fh*0.05}" stroke="#2b2b2b" stroke-width="${fh*0.07}" stroke-linecap="round"/>
+          <line x1="${x-fh*0.09}" y1="${y+fh*0.15}" x2="${x-fh*0.2}" y2="${y+fh*0.35}" stroke="#2b2b2b" stroke-width="${fh*0.07}" stroke-linecap="round"/>`;
+  } else if(pose==='carry'){
+    arms=`<rect x="${x-fh*0.05}" y="${y+fh*0.02}" width="${fh*0.28}" height="${fh*0.22}" fill="#6b6357"/>`;
+  } else {
+    arms=`<line x1="${x-fh*0.09}" y1="${y+fh*0.15}" x2="${x-fh*0.17}" y2="${y+fh*0.4}" stroke="#2b2b2b" stroke-width="${fh*0.07}" stroke-linecap="round"/>
+          <line x1="${x+fh*0.09}" y1="${y+fh*0.15}" x2="${x+fh*0.17}" y2="${y+fh*0.4}" stroke="#2b2b2b" stroke-width="${fh*0.07}" stroke-linecap="round"/>`;
+  }
+  if(pose==='sit'){
+    return `<circle cx="${x}" cy="${y-fh*0.22}" r="${headR}" fill="#2b2b2b"/>
+      <rect x="${x-fh*0.09}" y="${y-fh*0.1}" width="${fh*0.18}" height="${fh*0.35}" rx="${fh*0.07}" fill="#2b2b2b"/>
+      <rect x="${x-fh*0.2}" y="${y+fh*0.22}" width="${fh*0.4}" height="${fh*0.16}" rx="${fh*0.06}" fill="#2b2b2b"/>`;
+  }
+  return `${arms}
+    <circle cx="${x}" cy="${y-fh*0.22}" r="${headR}" fill="#2b2b2b"/>
+    <rect x="${x-fh*0.09}" y="${y-fh*0.1}" width="${fh*0.18}" height="${fh*0.62}" rx="${fh*0.08}" fill="#2b2b2b"/>
+    <rect x="${x-fh*0.16}" y="${y+fh*0.42}" width="${fh*0.13}" height="${fh*0.32}" fill="#2b2b2b"/>
+    <rect x="${x+fh*0.03}" y="${y+fh*0.42}" width="${fh*0.13}" height="${fh*0.32}" fill="#2b2b2b"/>`;
+}
+// Six distinct scene templates so pictures actually look different and mean something,
+// instead of the same 3 stick figures every time.
+const TAT_TEMPLATES = [
+  // 0: Village path with hills
+  (rnd,w,h,groundY)=>{
+    let s=`<circle cx="${w-80}" cy="70" r="34" fill="#f4d9a0"/>`;
+    s+=`<polygon points="0,${groundY} 160,${groundY-90} 320,${groundY}" fill="#8b9c8a" opacity="0.55"/>`;
+    s+=`<polygon points="180,${groundY} 340,${groundY-60} 500,${groundY}" fill="#7c9270" opacity="0.4"/>`;
+    s+=`<rect x="70" y="${groundY-95}" width="9" height="95" fill="#6b6357"/><circle cx="74" cy="${groundY-108}" r="30" fill="#5f7a58" opacity="0.8"/>`;
+    const poses=['stand','point'];
+    const n=2+Math.floor(rnd()*2);
+    for(let i=0;i<n;i++) s+=drawFigure(220+i*90+rnd()*30, groundY, 75+rnd()*20, poses[Math.floor(rnd()*poses.length)], rnd);
+    return s;
+  },
+  // 1: Market street with stalls
+  (rnd,w,h,groundY)=>{
+    let s='';
+    for(let i=0;i<3;i++){ const bx=40+i*190; s+=`<rect x="${bx}" y="${groundY-130}" width="130" height="130" fill="#9c9184" opacity="0.5"/><rect x="${bx+20}" y="${groundY-105}" width="24" height="30" fill="#e8e2d0"/><rect x="${bx+80}" y="${groundY-105}" width="24" height="30" fill="#e8e2d0"/>`; }
+    s+=`<rect x="30" y="${groundY-4}" width="${w-60}" height="6" fill="#8a8478" opacity="0.5"/>`;
+    s+=`<rect x="${w/2-30}" y="${groundY-40}" width="60" height="40" fill="#b3593f" opacity="0.6"/>`;
+    const n=2+Math.floor(rnd()*2);
+    for(let i=0;i<n;i++) s+=drawFigure(140+i*130+rnd()*40, groundY, 75+rnd()*15, rnd()<0.5?'stand':'carry', rnd);
+    return s;
+  },
+  // 2: River / rescue scene
+  (rnd,w,h,groundY)=>{
+    let s=`<rect y="${groundY-30}" width="${w}" height="${h-groundY+30}" fill="#7fa3b0" opacity="0.55"/>`;
+    s+=`<polygon points="${w*0.35},${groundY-10} ${w*0.65},${groundY-10} ${w*0.58},${groundY+30} ${w*0.42},${groundY+30}" fill="#6b5238"/>`;
+    const n=2+Math.floor(rnd()*2);
+    for(let i=0;i<n;i++) s+=drawFigure(w*0.42+i*35, groundY-8, 55, i===0?'point':'stand', rnd);
+    return s;
+  },
+  // 3: Meeting / table scene (indoors)
+  (rnd,w,h,groundY)=>{
+    let s=`<rect x="20" y="30" width="${w-40}" height="${groundY-30}" fill="#efe9db" opacity="0.5"/>`;
+    s+=`<rect x="${w/2-90}" y="${groundY-30}" width="180" height="16" fill="#8a7860" opacity="0.7"/>`;
+    const n=3;
+    const poses=['sit','sit','point'];
+    for(let i=0;i<n;i++) s+=drawFigure(w/2-70+i*70, groundY, 78+rnd()*10, poses[i], rnd);
+    return s;
+  },
+  // 4: Mountain trek
+  (rnd,w,h,groundY)=>{
+    let s=`<polygon points="0,${groundY} 130,${groundY-160} 260,${groundY}" fill="#8b8477" opacity="0.55"/>`;
+    s+=`<polygon points="150,${groundY} 300,${groundY-190} 450,${groundY}" fill="#a29a8c" opacity="0.45"/>`;
+    s+=`<polyline points="60,${groundY} 180,${groundY-30} 300,${groundY-10} 420,${groundY-40}" fill="none" stroke="#c9b98f" stroke-width="10" opacity="0.6"/>`;
+    const n=2+Math.floor(rnd()*2);
+    for(let i=0;i<n;i++) s+=drawFigure(200+i*70+rnd()*30, groundY-10-i*3, 70, 'carry', rnd);
+    return s;
+  },
+  // 5: Evening campfire
+  (rnd,w,h,groundY)=>{
+    let s=`<circle cx="${100+rnd()*60}" cy="60" r="26" fill="#e9e4d6" opacity="0.8"/>`;
+    for(let i=0;i<12;i++) s+=`<circle cx="${rnd()*w}" cy="${rnd()*(groundY-100)}" r="1.6" fill="#fff" opacity="0.7"/>`;
+    s+=`<polygon points="${w/2-14},${groundY} ${w/2},${groundY-46} ${w/2+14},${groundY}" fill="#d97a3f"/>`;
+    s+=`<polygon points="${w/2-8},${groundY} ${w/2},${groundY-26} ${w/2+8},${groundY}" fill="#f2b24a"/>`;
+    const n=3;
+    for(let i=0;i<n;i++){ const ang=i*2.2; s+=drawFigure(w/2+Math.cos(ang)*90, groundY, 72, 'sit', rnd); }
+    return s;
+  }
+];
+// Builds a themed scene (village, market, river-rescue, meeting, trek, or campfire) as an
+// inline SVG data URI — renders instantly, works fully offline, and always differs by seed.
+function generateTatScene(seed){
+  const rnd = seededRand(seed);
+  const w=640,h=420;
+  const skies = [['#dfe7ee','#f4ede0'],['#e8e2d0','#f6f1e4'],['#dde3e6','#eef2ee'],['#e6ddd0','#f2ebda'],['#2c3242','#4a5268'],['#f0e3d0','#f9f2e6']];
+  const templateIdx = Math.floor(rnd()*TAT_TEMPLATES.length);
+  const isNight = templateIdx===5;
+  const sky = isNight ? skies[4] : skies[Math.floor(rnd()*4)];
+  const groundY = 270+Math.floor(rnd()*30);
+  const groundColor = isNight ? '#4d4536' : '#c9c2ac';
+  const scene = TAT_TEMPLATES[templateIdx](rnd,w,h,groundY);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${sky[0]}"/><stop offset="100%" stop-color="${sky[1]}"/>
+    </linearGradient></defs>
+    <rect width="${w}" height="${h}" fill="url(#sky)"/>
+    <rect y="${groundY}" width="${w}" height="${h-groundY}" fill="${groundColor}"/>
+    ${scene}
+  </svg>`;
+  return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg);
+}
+
+function renderAiGenForm(){
+  const backendReady = AI_BACKEND_URL && AI_BACKEND_URL.indexOf('PASTE_YOUR') === -1;
+  const previewHtml = STATE.aiGenerated.map((q,i)=>`
+    <div class="note-item" style="display:flex;gap:10px;align-items:flex-start;">
+      <input type="checkbox" data-aicheck="${i}" ${q.selected?'checked':''} style="margin-top:4px;">
+      <div style="flex:1;">
+        <div class="q">${q.q}</div>
+        <div style="font-size:13px;color:var(--text-dim);margin-top:4px;">
+          ${q.opts.map((o,oi)=>`<div style="${oi===q.ans?'color:var(--khaki-bright);font-weight:600;':''}">${oi===q.ans?'✔ ':'• '}${o}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+  `).join('');
+  if(!backendReady){
+    return `
+    <div class="panel" style="background:rgba(255,255,255,0.03);margin-bottom:14px;">
+      <p style="color:var(--rust-bright);font-size:13.5px;">AI generator isn't set up yet in this copy of the app. Ask whoever gave you this app to finish the one-time setup.</p>
+    </div>`;
+  }
+  return `
+  <div class="panel" style="background:rgba(255,255,255,0.03);margin-bottom:14px;">
+    <label>Paste notes here (English/Urdu mix is fine)</label>
+    <textarea id="aiNotesText" placeholder="Paste your notes, textbook chapter, or lecture summary...">${STATE.aiNotesDraft}</textarea>
+    <label style="margin-top:10px;">Or upload a file (.txt, .pdf, .docx) — text gets pulled in automatically</label>
+    <input type="file" id="notesFileInput" accept=".txt,.pdf,.docx" class="searchbox" style="padding:10px;">
+    ${STATE.fileParsing?`<p style="color:var(--khaki);font-size:12.5px;margin-top:8px;">Reading file…</p>`:''}
+    ${STATE.fileParseError?`<p style="color:var(--rust-bright);font-size:12.5px;margin-top:8px;">${STATE.fileParseError}</p>`:''}
+    <label>How many MCQs to generate</label>
+    <select id="aiMcqCount" class="searchbox">
+      <option value="5">5</option><option value="10" selected>10</option><option value="15">15</option><option value="20">20</option>
+    </select>
+    <div class="row" style="margin-top:12px;">
+      <button class="btn" id="aiGenerateBtn" ${STATE.aiGenLoading?'disabled':''}>${STATE.aiGenLoading?'Generating…':'Generate MCQs'}</button>
+    </div>
+    ${STATE.aiGenError?`<p style="color:var(--rust-bright);font-size:12.5px;margin-top:10px;">${STATE.aiGenError}</p>`:''}
+    ${STATE.aiGenerated.length?`
+      <h4 style="font-family:'Oswald';color:var(--khaki);text-transform:uppercase;font-size:14px;margin:18px 0 8px;">Review &amp; select which to save</h4>
+      ${previewHtml}
+      <div class="row" style="margin-top:12px;">
+        <button class="btn" id="aiSaveSelectedBtn">Save Selected to My MCQs</button>
+      </div>
+    `:''}
+  </div>
+  `;
+}
+
+// One-time setup by the app owner: paste the deployed Google Apps Script Web App
+// URL here. The real Gemini key lives only in that script's Script Properties —
+// it is NEVER present in this file, so nothing here is sensitive to distribute.
+const AI_BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwiq1UbCBwDyfm_yqM825n7TkQkT5jdjrDAq7FbvLjGTFeQEj8anYxdhpD0P1_zmEA9/exec';
+
+async function extractTextFromFile(file){
+  const name = file.name.toLowerCase();
+  if(name.endsWith('.txt')){
+    return await file.text();
+  }
+  if(name.endsWith('.pdf')){
+    if(!window.pdfjsLib) throw new Error('PDF reader failed to load — check your internet connection and try again.');
+    const buf = await file.arrayBuffer();
+    const doc = await pdfjsLib.getDocument({data:buf}).promise;
+    let out='';
+    for(let p=1;p<=doc.numPages;p++){
+      const page = await doc.getPage(p);
+      const content = await page.getTextContent();
+      out += content.items.map(it=>it.str).join(' ') + '\n';
+    }
+    return out.trim();
+  }
+  if(name.endsWith('.docx')){
+    if(!window.mammoth) throw new Error('Word reader failed to load — check your internet connection and try again.');
+    const buf = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({arrayBuffer:buf});
+    return result.value.trim();
+  }
+  if(name.endsWith('.doc')){
+    throw new Error('Old .doc format isn\'t supported — open it in Word and "Save As" .docx, or copy-paste the text instead.');
+  }
+  throw new Error('Unsupported file type — use .txt, .pdf, or .docx.');
+}
+
+async function generateMcqsFromNotes(notesText,count){
+  const resp = await fetch(AI_BACKEND_URL,{
+    method:'POST',
+    body: JSON.stringify({notes:notesText, count:count})
+  });
+  if(!resp.ok){
+    throw new Error('Server error ('+resp.status+'). Try again in a bit.');
+  }
+  const data = await resp.json();
+  if(data.error) throw new Error('Generator error: '+data.error);
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if(!text) throw new Error('No response text came back — try again.');
+  let parsed;
+  try{ parsed = JSON.parse(text); }
+  catch(e){ throw new Error('Could not parse the AI response as JSON — try again.'); }
+  if(!Array.isArray(parsed) || parsed.length===0) throw new Error('AI did not return any questions — try shorter/clearer notes.');
+  const clean = parsed.filter(q=>q && typeof q.q==='string' && Array.isArray(q.opts) && q.opts.length===4 && Number.isInteger(q.ans) && q.ans>=0 && q.ans<=3);
+  if(clean.length===0) throw new Error('AI response was malformed — try again.');
+  return clean;
+}
+
+function renderInterview(){
+  const html = INTERVIEW_QA.map(([who,q])=>`
+    <div class="qa-block">
+      <div class="who">${who}</div>
+      <div class="q">${q}</div>
+    </div>
+  `).join('');
+  return `<div class="panel"><h2 style="font-size:20px;margin-bottom:12px;">Interview Question Bank</h2>${html}</div>`;
+}
+
+function renderGto(){
+  const html = GTO_INFO.map(([h,p])=>`
+    <div class="info-card"><h4>${h}</h4><p>${p}</p></div>
+  `).join('');
+  return `<div class="panel"><h2 style="font-size:20px;margin-bottom:12px;">How ISSB Actually Works</h2>${html}</div>`;
+}
+
+/* =========================================================================
+   EVENT WIRING
+   ========================================================================= */
+function wireViewEvents(){
+  document.querySelectorAll('.card[data-nav]').forEach(c=>{
+    c.addEventListener('click',()=>{ if(c.dataset.nav==='testsetup') STATE.test=null; setView(c.dataset.nav); });
+  });
+
+  if(STATE.view==='study'){
+    const input=document.getElementById('studySearchInput');
+    if(input) input.addEventListener('input', e=>{STATE.studySearch=e.target.value; render(); input.focus(); input.selectionStart=input.selectionEnd=input.value.length;});
+    document.querySelectorAll('[data-filter]').forEach(b=>{
+      b.addEventListener('click',()=>{STATE.studyFilter=b.dataset.filter; render();});
+    });
+    const toggleBtn=document.getElementById('toggleAddMcqBtn');
+    if(toggleBtn) toggleBtn.addEventListener('click',()=>{ STATE.showAddMcq=!STATE.showAddMcq; render(); });
+    const toggleAiBtn=document.getElementById('toggleAiGenBtn');
+    if(toggleAiBtn) toggleAiBtn.addEventListener('click',()=>{ STATE.showAiGen=!STATE.showAiGen; STATE.aiGenError=null; render(); });
+    const fileInput=document.getElementById('notesFileInput');
+    if(fileInput) fileInput.addEventListener('change', async (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      STATE.fileParsing=true; STATE.fileParseError=null; render();
+      try{
+        const text = await extractTextFromFile(file);
+        if(!text || text.trim().length<10){
+          STATE.fileParseError='Couldn\'t find readable text in that file — try a different file or paste the text manually.';
+        }else{
+          STATE.aiNotesDraft = text;
+        }
+      }catch(err){
+        STATE.fileParseError = err.message || 'Could not read that file.';
+      }
+      STATE.fileParsing=false;
+      render();
+    });
+    const aiGenBtn=document.getElementById('aiGenerateBtn');
+    if(aiGenBtn) aiGenBtn.addEventListener('click', async ()=>{
+      const notes=document.getElementById('aiNotesText').value.trim();
+      const count=parseInt(document.getElementById('aiMcqCount').value,10);
+      if(!notes || notes.length<20){ STATE.aiGenError='Please paste some notes first (at least a few sentences).'; render(); return; }
+      STATE.aiGenLoading=true; STATE.aiGenError=null; STATE.aiGenerated=[]; render();
+      try{
+        const qs = await generateMcqsFromNotes(notes,count);
+        STATE.aiGenerated = qs.map(q=>({...q, selected:true}));
+      }catch(err){
+        STATE.aiGenError = err.message || 'Something went wrong. Please try again.';
+      }
+      STATE.aiGenLoading=false;
+      render();
+    });
+    document.querySelectorAll('[data-aicheck]').forEach(cb=>{
+      cb.addEventListener('change', e=>{
+        const idx=parseInt(cb.dataset.aicheck,10);
+        STATE.aiGenerated[idx].selected = e.target.checked;
+      });
+    });
+    const aiSaveBtn=document.getElementById('aiSaveSelectedBtn');
+    if(aiSaveBtn) aiSaveBtn.addEventListener('click',()=>{
+      const chosen = STATE.aiGenerated.filter(q=>q.selected);
+      if(chosen.length===0){ return; }
+      const custom=loadCustomMcqs();
+      chosen.forEach(q=> custom.push({q:q.q, opts:q.opts, ans:q.ans}));
+      saveCustomMcqs(custom);
+      refreshAllQ();
+      STATE.aiGenerated=[];
+      STATE.showAiGen=false;
+      STATE.studyFilter='My Notes';
+      render();
+    });
+    const saveBtn=document.getElementById('mcqSaveBtn');
+    if(saveBtn) saveBtn.addEventListener('click',()=>{
+      const qText=document.getElementById('mcqQ').value.trim();
+      const optA=document.getElementById('mcqOptA').value.trim();
+      const optB=document.getElementById('mcqOptB').value.trim();
+      const optC=document.getElementById('mcqOptC').value.trim();
+      const optD=document.getElementById('mcqOptD').value.trim();
+      const ans=parseInt(document.getElementById('mcqCorrect').value,10);
+      if(!qText || !optA || !optB || !optC || !optD){
+        document.getElementById('mcqFormError').style.display='block';
+        return;
+      }
+      const custom=loadCustomMcqs();
+      custom.push({q:qText, opts:[optA,optB,optC,optD], ans});
+      saveCustomMcqs(custom);
+      refreshAllQ();
+      STATE.showAddMcq=false;
+      STATE.studyFilter='My Notes';
+      render();
+    });
+    document.querySelectorAll('[data-delcustom]').forEach(b=>{
+      b.addEventListener('click',()=>{
+        const id=b.dataset.delcustom; // 'custom'+index
+        const idx=parseInt(id.replace('custom',''),10);
+        const custom=loadCustomMcqs();
+        custom.splice(idx,1);
+        saveCustomMcqs(custom);
+        refreshAllQ();
+        render();
+      });
+    });
+  }
+
+  if(STATE.view==='testsetup'){
+    const btn=document.getElementById('startTestBtn');
+    if(btn) btn.addEventListener('click',()=>{
+      const total=parseInt(document.getElementById('cfgTotal').value,10);
+      const minutes=parseInt(document.getElementById('cfgTime').value,10);
+      STATE.test = buildTest(total,minutes);
+      setView('testrun');
+      clearInterval(TEST_TIMER_HANDLE);
+      TEST_TIMER_HANDLE=setInterval(tickTimer,1000);
+    });
+  }
+
+  if(STATE.view==='testrun'){
+    const t=STATE.test;
+    document.querySelectorAll('[data-opt]').forEach(b=>{
+      b.addEventListener('click',()=>{
+        t.answers[t.current]=parseInt(b.dataset.opt,10);
+        render();
+      });
+    });
+    document.querySelectorAll('[data-jump]').forEach(s=>{
+      s.addEventListener('click',()=>{ t.current=parseInt(s.dataset.jump,10); render(); });
+    });
+    const prev=document.getElementById('prevQ');
+    if(prev) prev.addEventListener('click',()=>{ t.current=Math.max(0,t.current-1); render(); });
+    const next=document.getElementById('nextQ');
+    if(next) next.addEventListener('click',()=>{ t.current=Math.min(t.questions.length-1,t.current+1); render(); });
+    const submit=document.getElementById('submitTest');
+    if(submit) submit.addEventListener('click', finishTest);
+  }
+
+  if(STATE.view==='testresult'){
+    const retake=document.getElementById('retakeBtn');
+    if(retake) retake.addEventListener('click',()=>{ setView('testsetup'); });
+  }
+
+  if(STATE.view==='issb'){
+    document.querySelectorAll('[data-issbtab]').forEach(b=>{
+      b.addEventListener('click',()=>{ ISSB_TAB=b.dataset.issbtab; render(); });
+    });
+    if(ISSB_TAB==='srt'){
+      const startBtn=document.getElementById('srtStartBtn');
+      if(startBtn) startBtn.addEventListener('click',()=>{
+        clearInterval(STATE.srtTimer);
+        STATE.srtSeconds=30;
+        STATE.srtRunning=true;
+        updateSrtTimerDisplay();
+        STATE.srtTimer=setInterval(()=>{
+          STATE.srtSeconds--;
+          if(STATE.srtSeconds<=0){ clearInterval(STATE.srtTimer); STATE.srtSeconds=0; STATE.srtRunning=false; }
+          updateSrtTimerDisplay();
+        },1000);
+      });
+      const nextBtn=document.getElementById('srtNextBtn');
+      if(nextBtn) nextBtn.addEventListener('click',()=>{
+        clearInterval(STATE.srtTimer);
+        STATE.srtSeconds=30; STATE.srtRunning=false;
+        STATE.srtIndex++;
+        render();
+      });
+    }
+    if(ISSB_TAB==='wat'){
+      const startBtn=document.getElementById('watStartBtn');
+      if(startBtn) startBtn.addEventListener('click',()=>{
+        clearInterval(STATE.watTimer);
+        STATE.watSeconds=15;
+        STATE.watRunning=true;
+        updateWatTimerDisplay();
+        STATE.watTimer=setInterval(()=>{
+          STATE.watSeconds--;
+          if(STATE.watSeconds<=0){ clearInterval(STATE.watTimer); STATE.watSeconds=0; STATE.watRunning=false; }
+          updateWatTimerDisplay();
+        },1000);
+      });
+      const nextBtn=document.getElementById('watNextBtn');
+      if(nextBtn) nextBtn.addEventListener('click',()=>{
+        clearInterval(STATE.watTimer);
+        STATE.watSeconds=15; STATE.watRunning=false;
+        STATE.watIndex++;
+        render();
+      });
+    }
+    if(ISSB_TAB==='tat'){
+      const startBtn=document.getElementById('tatStartBtn');
+      if(startBtn) startBtn.addEventListener('click',()=>{
+        clearInterval(STATE.tatTimer);
+        STATE.tatSeconds=30;
+        STATE.tatRunning=true;
+        updateTatTimerDisplay();
+        STATE.tatTimer=setInterval(()=>{
+          STATE.tatSeconds--;
+          if(STATE.tatSeconds<=0){ clearInterval(STATE.tatTimer); STATE.tatSeconds=0; STATE.tatRunning=false; }
+          updateTatTimerDisplay();
+        },1000);
+      });
+      const nextBtn=document.getElementById('tatNextBtn');
+      if(nextBtn) nextBtn.addEventListener('click',()=>{
+        clearInterval(STATE.tatTimer);
+        STATE.tatSeconds=30; STATE.tatRunning=false;
+        STATE.tatIndex++;
+        render();
+      });
+    }
+  }
+}
+
+function updateSrtTimerDisplay(){
+  const d=document.getElementById('srtTimerDisplay');
+  if(d){ d.textContent=STATE.srtSeconds+'s'; d.classList.toggle('low', STATE.srtSeconds<=10); }
+}
+function updateWatTimerDisplay(){
+  const d=document.getElementById('watTimerDisplay');
+  if(d){ d.textContent=STATE.watSeconds+'s'; d.classList.toggle('low', STATE.watSeconds<=5); }
+}
+function updateTatTimerDisplay(){
+  const d=document.getElementById('tatTimerDisplay');
+  if(d){ d.textContent=STATE.tatSeconds+'s'; d.classList.toggle('low', STATE.tatSeconds<=10); }
+}
+
+render();
+</script>
+</body>
+</html>
